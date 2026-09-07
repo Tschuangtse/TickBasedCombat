@@ -1,0 +1,172 @@
+.tick-combat-app .window-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.tick-combat-timeline {
+  display: flex;
+  flex-direction: column;
+  min-width: 360px;
+  max-width: 100%;
+  min-height: 140px;
+}
+
+.tick-combat-toolbar,
+.tick-combat-help {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: var(--color-cool-5-50, rgba(0, 0, 0, 0.25));
+}
+
+.tick-combat-toolbar {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border-light-primary, rgba(255, 255, 255, 0.15));
+}
+
+.tick-combat-toolbar-actions,
+.tick-combat-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.tick-combat-toolbar button,
+.tick-combat-card-actions button,
+.tick-combat-wait {
+  width: auto;
+  min-height: 30px;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+}
+
+.tick-combat-track {
+  display: flex;
+  align-items: stretch;
+  gap: 0.55rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.65rem;
+}
+
+.tick-combat-column {
+  flex: 0 0 124px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.tick-combat-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0.3rem 0.6rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  background: var(--color-warm-1, #ee9b3a);
+  color: var(--color-dark-1, #111);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 9px 50%);
+}
+
+.tick-combat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 64px;
+  padding: 0.45rem;
+  border: 1px solid var(--color-border-light-primary, rgba(255, 255, 255, 0.18));
+  border-radius: 4px;
+  background: var(--color-cool-5-75, rgba(20, 20, 20, 0.55));
+}
+
+.tick-combat-card.is-waiting {
+  opacity: 0.62;
+}
+
+.tick-combat-card.is-hidden {
+  outline: 1px dashed var(--color-text-subtle, #999);
+}
+
+.tick-combat-name {
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0.2rem 0.35rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.tick-combat-notes {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--font-size-12, 0.75rem);
+  line-height: 1.2;
+  opacity: 0.85;
+}
+
+.tick-combat-delta {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.tick-combat-delta input {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+
+.tick-combat-card-actions button {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-inline: 0.3rem;
+}
+
+.tick-combat-help {
+  border-top: 1px solid var(--color-border-light-primary, rgba(255, 255, 255, 0.15));
+  font-size: var(--font-size-11, 0.7rem);
+  opacity: 0.8;
+}
+
+.tick-combat-empty {
+  width: 100%;
+  padding: 1rem;
+  text-align: center;
+  opacity: 0.75;
+}
+
+.tick-combat-launcher {
+  width: 100%;
+  margin: 0.35rem 0 0;
+}
+
+.tick-combat-launcher i {
+  margin-right: 0.35rem;
+}
+
+.tick-combat-dialog .tick-combat-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.tick-combat-dialog .tick-combat-field {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr);
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.tick-combat-dialog .tick-combat-field textarea {
+  resize: vertical;
+}
+
+.tick-combat-dialog .tick-combat-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

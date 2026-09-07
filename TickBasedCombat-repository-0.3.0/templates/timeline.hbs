@@ -1,0 +1,112 @@
+<section class="tick-combat-timeline">
+  <header class="tick-combat-toolbar">
+    <div class="tick-combat-status">
+      {{#if started}}
+        <span><strong>Total:</strong> {{totalTicks}}</span>
+      {{else}}
+        <span>Combat not started</span>
+      {{/if}}
+    </div>
+
+    <div class="tick-combat-toolbar-actions">
+      {{#if isGM}}
+        <button type="button" data-action="addEvent" title="Add timeline event">
+          <i class="fa-solid fa-plus"></i> Event
+        </button>
+      {{/if}}
+
+      <button type="button" data-action="cycleScale" title="Cycle timeline scale">
+        <i class="fa-solid fa-magnifying-glass"></i> {{scale}}×
+      </button>
+
+      {{#if isGM}}
+        {{#if started}}
+          <button type="button" data-action="endCombat" title="End combat">
+            <i class="fa-solid fa-flag-checkered"></i> End
+          </button>
+        {{else}}
+          {{#if hasCombat}}
+            <button type="button" data-action="startCombat" title="Start combat">
+              <i class="fa-solid fa-play"></i> Start
+            </button>
+          {{/if}}
+        {{/if}}
+      {{/if}}
+    </div>
+  </header>
+
+  <div class="tick-combat-track">
+    {{#each list}}
+      <section class="tick-combat-column">
+        <div class="tick-combat-marker" aria-label="Tick {{this.ticks}}">
+          <span>{{this.ticks}}</span>
+        </div>
+
+        {{#each this.items}}
+          <article class="tick-combat-card {{#if this.isWaiting}}is-waiting{{/if}} {{#if this.isHidden}}is-hidden{{/if}}">
+            <button
+              type="button"
+              class="tick-combat-name"
+              data-action="editItem"
+              data-id="{{this.id}}"
+              title="{{this.notes}}"
+            >
+              {{this.name}}
+            </button>
+
+            {{#if this.notes}}
+              <div class="tick-combat-notes">{{this.notes}}</div>
+            {{/if}}
+
+            {{#if this.isEvent}}
+              {{#if ../../isGM}}
+                <div class="tick-combat-card-actions">
+                  <button type="button" data-action="fastForward" data-id="{{this.id}}" title="Advance/complete event">
+                    {{#if this.repeating}}
+                      {{this.ffwd}} <i class="fa-solid fa-arrows-turn-right"></i>
+                    {{else}}
+                      <i class="fa-solid fa-check"></i>
+                    {{/if}}
+                  </button>
+                  <button type="button" data-action="toggleHide" data-id="{{this.id}}" title="Toggle event visibility">
+                    {{#if this.isHidden}}
+                      <i class="fa-solid fa-eye-slash"></i>
+                    {{else}}
+                      <i class="fa-solid fa-eye"></i>
+                    {{/if}}
+                  </button>
+                  <button type="button" data-action="deleteEvent" data-id="{{this.id}}" title="Delete event">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              {{/if}}
+            {{else}}
+              {{#if ../../isGM}}
+                <label class="tick-combat-delta" title="Enter tick cost and press Enter">
+                  <span>+</span>
+                  <input class="tick-combat-ticks" data-id="{{this.id}}" type="number" step="1" value="0">
+                </label>
+              {{/if}}
+
+              {{#if this.canWait}}
+                <button type="button" class="tick-combat-wait" data-action="toggleWait" data-id="{{this.id}}">
+                  {{#if this.isWaiting}}
+                    <i class="fa-solid fa-play"></i> Waiting
+                  {{else}}
+                    <i class="fa-solid fa-pause"></i> Wait
+                  {{/if}}
+                </button>
+              {{/if}}
+            {{/if}}
+          </article>
+        {{/each}}
+      </section>
+    {{else}}
+      <div class="tick-combat-empty">No active combatants or timeline events.</div>
+    {{/each}}
+  </div>
+
+  <footer class="tick-combat-help">
+    GM: click a name to edit. Shift-click a combatant name to ping its token. Enter a tick cost and press Enter to advance.
+  </footer>
+</section>
