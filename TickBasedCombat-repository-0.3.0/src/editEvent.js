@@ -15,8 +15,7 @@ export async function editEvent(sourceData, callback) {
 
   const html = await foundry.applications.handlebars.renderTemplate(TEMPLATE, data);
   const content = document.createElement("div");
-  content.classList.add("tick-combat-dialog");
-  content.innerHTML = html;
+  content.innerHTML = `<div class="tick-combat-dialog">${html}</div>`;
 
   const result = await foundry.applications.api.DialogV2.input({
     window: { title },
