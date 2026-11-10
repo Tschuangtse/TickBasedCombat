@@ -1,11 +1,13 @@
-import { clearEvents, getCombatantAndEventsList, normalizeTicks, setTicks } from "./data.js";
+import { clearEvents, getCombatantAndEventsList, isNormalizationAuthority, normalizeTicks } from "./data.js";
 import { TimelineApp } from "./timeline.js";
 import { getTimelineApp, setTimelineApp } from "./state.js";
+import { refreshTokenHighlight, refreshTokenHighlights } from "./tokenHighlights.js";
 
 const MODULE_ID = "tick-combat";
 const MODULE_TITLE = "Tick Combat";
 
 async function refreshTimeline({ open = false } = {}) {
+  refreshTokenHighlights();
   const app = getTimelineApp();
   if (!app) return;
 
@@ -21,9 +23,18 @@ async function refreshTimeline({ open = false } = {}) {
   }
 }
 
-function injectCombatTrackerButton(_app, element) {
+function replaceCombatTracker(_app, element) {
   if (!(element instanceof HTMLElement)) return;
-  if (element.querySelector("[data-tick-combat-launcher]")) return;
+  const container = _app.isPopout
+    ? element.querySelector(".window-content") ?? element : element;
+  container.classList.add("tick-combat-replacement");
+  container.querySelector(":scope > .tick-combat-sidebar")?.remove();
+  const panel = document.createElement("section");
+  panel.className = "tick-combat-sidebar";
+
+  const explanation = document.createElement("p");
+  explanation.textContent = "Tick Combat replaces the standard combat tracker.";
+  panel.append(explanation);
 
   const button = document.createElement("button");
   button.type = "button";
@@ -38,8 +49,42 @@ function injectCombatTrackerButton(_app, element) {
     timeline.fitToTimeline?.();
   });
 
-  const header = element.querySelector("header") ?? element;
-  header.append(button);
+  panel.append(button);
+
+  if (game.user?.isGM) {
+    const encounters = document.createElement("select");
+    encounters.ariaLabel = "Encounter";
+    const empty = document.createElement("option");
+    empty.textContent = "Select encounter";
+    empty.value = "";
+    encounters.append(empty);
+    for (const combat of game.combats ?? []) {
+      const option = document.createElement("option");
+      option.value = combat.id;
+      option.textContent = combat.name || combat.scene?.name || combat.id;
+      option.selected = combat.id === game.combat?.id;
+      encounters.append(option);
+    }
+    encounters.addEventListener("change", async () => {
+      const combat = game.combats.get(encounters.value);
+      if (!combat || !game.user?.isGM) return;
+      await combat.activate();
+      await refreshTimeline({ open: true });
+    });
+    panel.append(encounters);
+    const create = document.createElement("button");
+    create.type = "button";
+    create.textContent = "Create encounter";
+    create.addEventListener("click", async () => {
+      if (!game.user?.isGM) return;
+      await foundry.documents.Combat.implementation.create({
+        scene: globalThis.canvas?.scene?.id ?? null, active: true
+      });
+      await refreshTimeline({ open: true });
+    });
+    panel.append(create);
+  }
+  container.append(panel);
 }
 
 Hooks.once("init", () => {
@@ -53,6 +98,7 @@ Hooks.once("init", () => {
     type: Number,
     default: 1,
     choices: {
+      0.5: "50%",
       0.75: "75%",
       1: "100%",
       1.25: "125%",
@@ -63,6 +109,14 @@ Hooks.once("init", () => {
       if (app?.rendered) app.setPosition({ scale: Number(value) || 1 });
     }
   });
+
+  game.settings.register(MODULE_ID, "visibleTickGroups", {
+    name: "Visible combatant tick groups",
+    hint: "Show all combatants or only the next three distinct tick positions. Waiting combatants remain visible.",
+    scope: "client", config: true, type: Number, default: 0,
+    choices: { 0: "All", 3: "Next 3 tick positions" },
+    onChange: () => refreshTimeline()
+  });
 });
 
 Hooks.once("ready", async () => {
@@ -71,39 +125,45 @@ Hooks.once("ready", async () => {
   console.info(`${MODULE_ID} | ${MODULE_TITLE} ready`);
 });
 
-Hooks.on("renderCombatTracker", injectCombatTrackerButton);
+Hooks.on("renderCombatTracker", replaceCombatTracker);
+Hooks.on("canvasReady", refreshTokenHighlights);
+Hooks.on("refreshToken", refreshTokenHighlight);
+Hooks.on("updateToken", () => refreshTimeline());
 
 Hooks.on("createCombat", async combat => {
-  if (game.user?.isGM) await clearEvents(combat);
+  if (isNormalizationAuthority()) await clearEvents(combat);
   await refreshTimeline({ open: true });
 });
 
-Hooks.on("updateCombat", async () => {
-  await refreshTimeline();
-});
-
-Hooks.on("deleteCombat", async () => {
-  const app = getTimelineApp();
-  if (app?.rendered) await app.close();
-});
-
-Hooks.on("createCombatant", async combatant => {
-  if (game.user?.isGM) await setTicks(combatant, 0);
-  await normalizeTicks();
-  await refreshTimeline({ open: true });
-});
-
-Hooks.on("updateCombatant", async (_combatant, changes, _options, userId) => {
-  const changedTickData = Object.hasOwn(changes ?? {}, "flags.tick-combat.data")
-    || foundry.utils.hasProperty(changes, "flags.tick-combat.data");
-  if (userId !== game.user.id && changedTickData) {
-    await normalizeTicks();
+Hooks.on("updateCombat", async (combat, changes, options) => {
+  if (!options?.tickCombatNormalization
+    && (Object.hasOwn(changes, "round") || Object.hasOwn(changes, "active"))) {
+    await normalizeTicks(combat);
   }
   await refreshTimeline();
 });
 
-Hooks.on("deleteCombatant", async () => {
-  await normalizeTicks();
+Hooks.on("deleteCombat", async () => {
+  await refreshTimeline();
+});
+
+Hooks.on("createCombatant", async combatant => {
+  await normalizeTicks(combatant.parent);
+  await refreshTimeline({ open: true });
+});
+
+Hooks.on("updateCombatant", async (combatant, changes, options) => {
+  const changedTickData = Object.hasOwn(changes ?? {}, "flags.tick-combat.data")
+    || foundry.utils.hasProperty(changes, "flags.tick-combat.data");
+  const changedParticipation = ["hidden", "defeated"].some(key => Object.hasOwn(changes ?? {}, key));
+  if (!options?.tickCombatNormalization && (changedTickData || changedParticipation)) {
+    await normalizeTicks(combatant.parent);
+  }
+  await refreshTimeline();
+});
+
+Hooks.on("deleteCombatant", async combatant => {
+  await normalizeTicks(combatant.parent);
   await refreshTimeline();
 });
 

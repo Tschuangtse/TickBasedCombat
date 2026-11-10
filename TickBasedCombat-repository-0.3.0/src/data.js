@@ -15,7 +15,7 @@ function clone(value) {
 }
 
 
-function isNormalizationAuthority() {
+export function isNormalizationAuthority() {
   if (!game.user?.isGM) return false;
   const activeGM = game.users?.activeGM;
   return !activeGM || activeGM.id === game.user.id;
@@ -108,8 +108,8 @@ export function getCombatantInfo(combatant) {
   };
 }
 
-export function getEvents() {
-  const events = game.combat?.getFlag(MODULE_ID, "events");
+export function getEvents(combat = game.combat) {
+  const events = combat?.getFlag(MODULE_ID, "events");
   return Array.isArray(events) ? clone(events) : [];
 }
 
@@ -179,8 +179,8 @@ export function getEventById(id) {
   return getEvents().find(event => event.id === id) ?? null;
 }
 
-export function getCombatantAndEventsList() {
-  const combatants = game.combat?.combatants;
+export function getCombatantAndEventsList({ combat = game.combat, forDisplay = true } = {}) {
+  const combatants = combat?.combatants;
   if (!combatants) return [];
 
   const result = [];
@@ -191,8 +191,8 @@ export function getCombatantAndEventsList() {
     }
   }
 
-  let events = getEvents();
-  if (!game.user?.isGM) events = events.filter(event => !event.isHidden);
+  let events = getEvents(combat);
+  if (forDisplay && !game.user?.isGM) events = events.filter(event => !event.isHidden);
 
   return [...result, ...events].sort((a, b) => {
     const tickDifference = asInteger(a.ticks) - asInteger(b.ticks);
@@ -201,32 +201,46 @@ export function getCombatantAndEventsList() {
   });
 }
 
-export async function normalizeTicks() {
-  if (!isNormalizationAuthority()) return;
+// Every request reads fresh data after the previous normalization has completed.
+// In particular, embedded-document hooks must not start a second normalization.
+const normalizationQueues = new WeakMap();
 
-  const timeline = getCombatantAndEventsList();
+export function normalizeTicks(combat = game.combat) {
+  if (!combat?.started || !isNormalizationAuthority()) return Promise.resolve();
+  const previous = normalizationQueues.get(combat) ?? Promise.resolve();
+  const next = previous.catch(() => {}).then(() => normalizeCombat(combat));
+  normalizationQueues.set(combat, next);
+  return next;
+}
+
+async function normalizeCombat(combat) {
+  if (!combat.started || !isNormalizationAuthority()) return;
+  const timeline = getCombatantAndEventsList({ combat, forDisplay: false });
   const active = timeline.filter(item => !item.isWaiting);
   if (!active.length) return;
 
   const normalization = asInteger(active[0].ticks, 0);
-  if (normalization === 0) {
-    getTimelineApp()?.render();
-    return;
-  }
+  if (normalization === 0) return;
 
-  for (const item of active) {
-    const newTicks = asInteger(item.ticks, 0) - normalization;
-    if (item.isEvent) {
-      await updateEvent({ ...item, ticks: newTicks });
-    } else {
-      await setTicks(item.combatant, newTicks);
-    }
-  }
+  const options = { tickCombatNormalization: true };
+  const updates = active.filter(item => !item.isEvent).map(item => ({
+    _id: item.id,
+    "flags.tick-combat.data": JSON.stringify({
+      ...getCombatantData(item.combatant),
+      ticks: asInteger(item.ticks, 0) - normalization
+    })
+  }));
+  if (updates.length) await combat.updateEmbeddedDocuments("Combatant", updates, options);
 
-  if (game.combat?.started && game.user?.isGM) {
-    const totalTicks = asInteger(game.combat.getFlag(MODULE_ID, "totalTicks"), 0);
-    await game.combat.setFlag(MODULE_ID, "totalTicks", totalTicks + normalization);
-  }
+  const events = getEvents(combat).map(event => event.isWaiting ? event : {
+    ...event, ticks: asInteger(event.ticks, 0) - normalization
+  });
+  const totalTicks = asInteger(combat.getFlag(MODULE_ID, "totalTicks"), 0);
+  await combat.update({
+    "flags.tick-combat.events": events,
+    // Corrections to earlier tick positions must not reduce elapsed time.
+    "flags.tick-combat.totalTicks": totalTicks + Math.max(0, normalization)
+  }, options);
 
   const app = getTimelineApp();
   app?.render();

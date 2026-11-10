@@ -13,6 +13,8 @@ import {
   updateEvent
 } from "./data.js";
 import { editEvent } from "./editEvent.js";
+import { canRollInitiative, rollInitiative } from "./initiative.js";
+import { groupTimeline } from "./timelineView.js";
 
 const MODULE_ID = "tick-combat";
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -23,13 +25,8 @@ function parseInteger(value, fallback = 0) {
 }
 
 function groupedTimeline() {
-  const groups = new Map();
-  for (const item of getCombatantAndEventsList()) {
-    const ticks = parseInteger(item.ticks, 0);
-    if (!groups.has(ticks)) groups.set(ticks, { ticks, items: [] });
-    groups.get(ticks).items.push(item);
-  }
-  return [...groups.values()];
+  const limit = Number(game.settings.get(MODULE_ID, "visibleTickGroups") ?? 0);
+  return groupTimeline(getCombatantAndEventsList(), limit);
 }
 
 export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -38,18 +35,19 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     classes: ["tick-combat-app"],
     position: {
       width: 500,
-      height: "auto",
+      height: 360,
       scale: 1
     },
     window: {
       title: "Timeline",
       icon: "fa-solid fa-stopwatch",
-      resizable: false,
+      resizable: true,
       minimizable: true
     },
     actions: {
       addEvent: this._onAddEvent,
       cycleScale: this._onCycleScale,
+      toggleLimit: this._onToggleLimit,
       startCombat: this._onStartCombat,
       endCombat: this._onEndCombat,
       editItem: this._onEditItem,
@@ -76,6 +74,7 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       list,
       isGM: Boolean(game.user?.isGM),
       scale,
+      limited: Number(game.settings.get(MODULE_ID, "visibleTickGroups")) === 3,
       totalTicks: parseInteger(game.combat?.getFlag(MODULE_ID, "totalTicks"), 0),
       started: Boolean(game.combat?.started),
       hasCombat: Boolean(game.combat)
@@ -90,31 +89,65 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       input.addEventListener("keydown", event => this._onTickKeydown(event));
     }
 
+    // V14 ContextMenu uses label/onClick/visible and HTMLElement callbacks.
+    if (this._menuElement !== this.element) {
+      this._menuElement = this.element;
+      this._initiativeMenu = new foundry.applications.ux.ContextMenu(
+      this.element, ".tick-combat-card[data-combatant-id]", [{
+        label: "Initiative würfeln",
+        icon: "fa-solid fa-dice-d6",
+        visible: target => canRollInitiative(getCombatant(target.dataset.combatantId)),
+        onClick: (_event, target) => rollInitiative(getCombatant(target.dataset.combatantId))
+      }], { fixed: true, relative: "cursor", jQuery: false }
+      );
+    }
+
     this.fitToTimeline();
   }
 
   fitToTimeline() {
+    // Later data refreshes must preserve a manually resized window.
+    if (this._hasInitialSize) return;
     const groups = groupedTimeline().length;
     const desired = 90 + (groups * 134);
     const viewportLimit = Math.max(360, (globalThis.innerWidth ?? 1280) - 120);
     const width = Math.min(Math.max(desired, 360), viewportLimit);
     const scale = Number(game.settings.get(MODULE_ID, "scale") ?? 1);
-    return super.setPosition({ width, height: "auto", scale });
+    this._hasInitialSize = true;
+    return this.setPosition({ width, height: 360, scale });
+  }
+
+  _prePosition(position) {
+    super._prePosition(position);
+    if (this.minimized) return;
+    if (typeof position.width === "number") position.width = Math.max(360, position.width);
+    if (typeof position.height === "number") position.height = Math.max(220, position.height);
+  }
+
+  async _preRender(context, options) {
+    await this._initiativeMenu?.close({ animate: false });
+    return super._preRender(context, options);
+  }
+
+  async _onClose(options) {
+    await this._initiativeMenu?.close({ animate: false });
+    await super._onClose(options);
   }
 
   async _onTickKeydown(event) {
     if (event.key !== "Enter" || !game.user?.isGM) return;
     event.preventDefault();
+    const input = event.currentTarget;
 
-    const delta = parseInteger(event.currentTarget.value, 0);
+    const delta = parseInteger(input.value, 0);
     if (delta === 0) return;
 
-    const combatant = getCombatant(event.currentTarget.dataset.id);
+    const combatant = getCombatant(input.dataset.id);
     if (!combatant) return;
 
     const current = getCombatantInfo(combatant).ticks;
     await setTicks(combatant, current + delta);
-    event.currentTarget.value = "0";
+    input.value = "0";
     await normalizeTicks();
   }
 
@@ -144,17 +177,23 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static async _onCycleScale() {
     const current = Number(game.settings.get(MODULE_ID, "scale") ?? 1);
-    const values = [0.75, 1, 1.25, 1.5];
+    const values = [0.5, 0.75, 1, 1.25, 1.5];
     const currentIndex = values.findIndex(value => Math.abs(value - current) < 0.01);
     const next = values[(currentIndex + 1 + values.length) % values.length];
     await game.settings.set(MODULE_ID, "scale", next);
     this.fitToTimeline();
   }
 
+  static async _onToggleLimit() {
+    const current = Number(game.settings.get(MODULE_ID, "visibleTickGroups"));
+    await game.settings.set(MODULE_ID, "visibleTickGroups", current === 3 ? 0 : 3);
+  }
+
   static async _onStartCombat() {
-    if (!game.user?.isGM || !game.combat) return;
+    if (!game.user?.isGM || !game.combat || game.combat.started) return;
     await game.combat.setFlag(MODULE_ID, "totalTicks", 0);
     if (!game.combat.started) await game.combat.startCombat();
+    await normalizeTicks();
     this.render();
   }
 

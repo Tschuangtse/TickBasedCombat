@@ -2,7 +2,7 @@
   <header class="tick-combat-toolbar">
     <div class="tick-combat-status">
       {{#if started}}
-        <span><strong>Total:</strong> {{totalTicks}}</span>
+        <span class="tick-combat-counter" title="Total ticks elapsed since combat started"><i class="fa-solid fa-stopwatch"></i> <strong>{{totalTicks}}</strong> Ticks</span>
       {{else}}
         <span>Combat not started</span>
       {{/if}}
@@ -17,6 +17,10 @@
 
       <button type="button" data-action="cycleScale" title="Cycle timeline scale">
         <i class="fa-solid fa-magnifying-glass"></i> {{scale}}×
+      </button>
+
+      <button type="button" data-action="toggleLimit" aria-pressed="{{#if limited}}true{{else}}false{{/if}}" title="Show all combatants or the next three distinct tick positions">
+        <i class="fa-solid fa-filter"></i> {{#if limited}}Next 3{{else}}All{{/if}}
       </button>
 
       {{#if isGM}}
@@ -43,7 +47,7 @@
         </div>
 
         {{#each this.items}}
-          <article class="tick-combat-card {{#if this.isWaiting}}is-waiting{{/if}} {{#if this.isHidden}}is-hidden{{/if}}">
+          <article class="tick-combat-card {{#if this.isWaiting}}is-waiting{{/if}} {{#if this.isHidden}}is-hidden{{/if}}" {{#unless this.isEvent}}data-combatant-id="{{this.id}}"{{/unless}}>
             <button
               type="button"
               class="tick-combat-name"
@@ -107,6 +111,6 @@
   </div>
 
   <footer class="tick-combat-help">
-    GM: click a name to edit. Shift-click a combatant name to ping its token. Enter a tick cost and press Enter to advance.
+    Click a name to edit (GM). Shift-click to ping. Right-click to roll initiative before combat. Enter a tick cost and press Enter to advance (GM).
   </footer>
 </section>
