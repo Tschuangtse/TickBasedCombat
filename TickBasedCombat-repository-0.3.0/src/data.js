@@ -1,4 +1,5 @@
 import { getTimelineApp } from "./state.js";
+import { normalizeComplexAction } from "./complexActionData.js";
 
 const MODULE_ID = "tick-combat";
 
@@ -6,7 +7,8 @@ const DEFAULT_COMBATANT_DATA = Object.freeze({
   ticks: 0,
   isWaiting: false,
   notes: "",
-  ffwd: 0
+  ffwd: 0,
+  complexAction: null
 });
 
 function clone(value) {
@@ -48,7 +50,8 @@ export function getCombatantData(combatant) {
     ticks: asInteger(parsed?.ticks, 0),
     ffwd: asInteger(parsed?.ffwd, 0),
     isWaiting: Boolean(parsed?.isWaiting),
-    notes: String(parsed?.notes ?? "")
+    notes: String(parsed?.notes ?? ""),
+    complexAction: normalizeComplexAction(parsed?.complexAction)
   };
 }
 
@@ -58,7 +61,8 @@ export async function setCombatantData(combatant, data) {
     ticks: asInteger(data?.ticks, 0),
     isWaiting: Boolean(data?.isWaiting),
     notes: String(data?.notes ?? ""),
-    ffwd: asInteger(data?.ffwd, 0)
+    ffwd: asInteger(data?.ffwd, 0),
+    complexAction: normalizeComplexAction(data?.complexAction)
   };
   await combatant.setFlag(MODULE_ID, "data", JSON.stringify(normalized));
 }
@@ -78,6 +82,7 @@ export async function setNote(combatant, value = "") {
 
 export async function toggleWaiting(combatant) {
   const data = getCombatantData(combatant);
+  if (data.complexAction) return;
   data.isWaiting = !data.isWaiting;
   await setCombatantData(combatant, data);
 }
@@ -101,7 +106,8 @@ export function getCombatantInfo(combatant) {
     name: combatant.name ?? combatant.actor?.name ?? "Combatant",
     isEvent: false,
     ticks: data.ticks,
-    canWait: userCanWait(combatant) && data.ticks === 0,
+    canWait: !data.complexAction && userCanWait(combatant) && data.ticks === 0,
+    complexAction: data.complexAction,
     isWaiting: data.isWaiting,
     notes: data.notes,
     ffwd: data.ffwd

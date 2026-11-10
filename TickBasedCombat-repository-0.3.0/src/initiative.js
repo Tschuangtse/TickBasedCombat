@@ -2,6 +2,7 @@ import { getCombatantData, setCombatantData } from "./data.js";
 
 export function canRollInitiative(combatant) {
   return Boolean(combatant?.parent && !combatant.parent.started
+    && !getCombatantData(combatant).complexAction
     && (game.user?.isGM || combatant.isOwner));
 }
 

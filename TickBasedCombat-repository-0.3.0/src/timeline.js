@@ -15,6 +15,7 @@ import {
 import { editEvent } from "./editEvent.js";
 import { canRollInitiative, rollInitiative } from "./initiative.js";
 import { groupTimeline } from "./timelineView.js";
+import { advanceComplexAction, canAdvanceComplexAction, canManageComplexAction, promptComplexAction } from "./complexAction.js";
 
 const MODULE_ID = "tick-combat";
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -46,6 +47,8 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     },
     actions: {
       addEvent: this._onAddEvent,
+      beginComplexAction: this._onBeginComplexAction,
+      advanceComplexAction: this._onAdvanceComplexAction,
       cycleScale: this._onCycleScale,
       toggleLimit: this._onToggleLimit,
       startCombat: this._onStartCombat,
@@ -71,6 +74,8 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     for (const group of list) {
       for (const item of group.items) {
         item.canRollInitiative = !item.isEvent && canRollInitiative(item.combatant);
+        item.canManageComplexAction = !item.isEvent && canManageComplexAction(item.combatant);
+        item.canAdvanceComplexAction = !item.isEvent && canAdvanceComplexAction(item.combatant);
       }
     }
     const scale = Number(game.settings.get(MODULE_ID, "scale") ?? 1);
@@ -127,6 +132,7 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const combatant = getCombatant(input.dataset.id);
     if (!combatant) return;
+    if (getCombatantInfo(combatant).complexAction) return;
 
     const current = getCombatantInfo(combatant).ticks;
     await setTicks(combatant, current + delta);
@@ -162,6 +168,16 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const combatant = getCombatant(target.dataset.id);
     if (!canRollInitiative(combatant)) return;
     await rollInitiative(combatant);
+    await this.render();
+  }
+
+  static async _onBeginComplexAction() {
+    await promptComplexAction();
+    await this.render();
+  }
+
+  static async _onAdvanceComplexAction(_event, target) {
+    await advanceComplexAction(getCombatant(target.dataset.id));
     await this.render();
   }
 

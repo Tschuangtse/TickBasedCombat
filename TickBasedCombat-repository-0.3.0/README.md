@@ -8,7 +8,7 @@ This branch/release is the Foundry VTT V14 / ApplicationV2 port of the original 
 
 - Foundry Virtual Tabletop: V14
 - Verified: 14.367
-- Module version: 0.3.5
+- Module version: 0.3.6
 
 ## Installation
 
@@ -27,6 +27,14 @@ In Foundry VTT Setup:
 - The module keeps the original package ID `tick-combat` so existing world flags remain accessible.
 - Legacy combatant data stored as JSON strings is still supported.
 - This V14 port should initially be tested on a copy of a world. The automated checks do not replace an in-world function test.
+
+## Changes in 0.3.6
+
+- Use **Complex action** with exactly one selected, active combat token that you own (or any eligible token as GM).
+- Enter only the action name and total duration: at least 8 ticks, in multiples of 8, using the number field's arrows or direct typing.
+- Beginning the action adds 8 ticks to the combatant and records 8 ticks of progress. The card shows the action name, progress such as **24/32 ticks**, and **Next 8 ticks** instead of normal tick input and waiting controls.
+- The next interval can only be applied at tick 0. Committing the final interval immediately restores the normal card, with the last 8 ticks still scheduled. An 8-tick action therefore returns to the normal card immediately after starting.
+- Progress is saved with the combatant and synchronized through Foundry flags. The display limit and elapsed tick counter continue to use the full timeline.
 
 ## Changes in 0.3.5
 

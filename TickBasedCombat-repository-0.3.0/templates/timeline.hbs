@@ -9,6 +9,11 @@
     </div>
 
     <div class="tick-combat-toolbar-actions">
+      {{#if hasCombat}}
+        <button type="button" data-action="beginComplexAction" title="Begin a complex action for exactly one selected combat token">
+          <i class="fa-solid fa-hourglass-start"></i> Complex action
+        </button>
+      {{/if}}
       {{#if isGM}}
         <button type="button" data-action="addEvent" title="Add timeline event">
           <i class="fa-solid fa-plus"></i> Event
@@ -70,6 +75,10 @@
             {{/if}}
             </div>
 
+            {{#if this.complexAction}}
+              <div class="tick-combat-complex-name">{{this.complexAction.name}}</div>
+            {{/if}}
+
             {{#if this.notes}}
               <div class="tick-combat-notes">{{this.notes}}</div>
             {{/if}}
@@ -97,21 +106,32 @@
                 </div>
               {{/if}}
             {{else}}
-              {{#if ../../isGM}}
-                <label class="tick-combat-delta" title="Enter tick cost and press Enter">
-                  <span>+</span>
-                  <input class="tick-combat-ticks" data-id="{{this.id}}" type="number" step="1" value="0">
-                </label>
-              {{/if}}
+              {{#if this.complexAction}}
+                <div class="tick-combat-complex-progress" aria-label="Complex action progress">
+                  {{this.complexAction.spent}}/{{this.complexAction.duration}} ticks
+                </div>
+                {{#if this.canManageComplexAction}}
+                  <button type="button" class="tick-combat-complex-advance" data-action="advanceComplexAction" data-id="{{this.id}}" {{#unless this.canAdvanceComplexAction}}disabled{{/unless}} title="Advance the next 8 ticks when this combatant reaches tick 0">
+                    <i class="fa-solid fa-forward-step"></i> Next 8 ticks
+                  </button>
+                {{/if}}
+              {{else}}
+                {{#if ../../isGM}}
+                  <label class="tick-combat-delta" title="Enter tick cost and press Enter">
+                    <span>+</span>
+                    <input class="tick-combat-ticks" data-id="{{this.id}}" type="number" step="1" value="0">
+                  </label>
+                {{/if}}
 
-              {{#if this.canWait}}
-                <button type="button" class="tick-combat-wait" data-action="toggleWait" data-id="{{this.id}}">
-                  {{#if this.isWaiting}}
-                    <i class="fa-solid fa-play"></i> Waiting
-                  {{else}}
-                    <i class="fa-solid fa-pause"></i> Wait
-                  {{/if}}
-                </button>
+                {{#if this.canWait}}
+                  <button type="button" class="tick-combat-wait" data-action="toggleWait" data-id="{{this.id}}">
+                    {{#if this.isWaiting}}
+                      <i class="fa-solid fa-play"></i> Waiting
+                    {{else}}
+                      <i class="fa-solid fa-pause"></i> Wait
+                    {{/if}}
+                  </button>
+                {{/if}}
               {{/if}}
             {{/if}}
           </article>
