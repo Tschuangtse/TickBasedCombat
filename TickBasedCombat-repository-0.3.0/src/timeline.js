@@ -51,6 +51,7 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       startCombat: this._onStartCombat,
       endCombat: this._onEndCombat,
       editItem: this._onEditItem,
+      rollInitiative: this._onRollInitiative,
       fastForward: this._onFastForward,
       deleteEvent: this._onDeleteEvent,
       toggleWait: this._onToggleWait,
@@ -67,6 +68,11 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     const list = groupedTimeline();
+    for (const group of list) {
+      for (const item of group.items) {
+        item.canRollInitiative = !item.isEvent && canRollInitiative(item.combatant);
+      }
+    }
     const scale = Number(game.settings.get(MODULE_ID, "scale") ?? 1);
 
     return {
@@ -89,19 +95,6 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       input.addEventListener("keydown", event => this._onTickKeydown(event));
     }
 
-    // V14 ContextMenu uses label/onClick/visible and HTMLElement callbacks.
-    if (this._menuElement !== this.element) {
-      this._menuElement = this.element;
-      this._initiativeMenu = new foundry.applications.ux.ContextMenu(
-      this.element, ".tick-combat-card[data-combatant-id]", [{
-        label: "Initiative würfeln",
-        icon: "fa-solid fa-dice-d6",
-        visible: target => canRollInitiative(getCombatant(target.dataset.combatantId)),
-        onClick: (_event, target) => rollInitiative(getCombatant(target.dataset.combatantId))
-      }], { fixed: true, relative: "cursor", jQuery: false }
-      );
-    }
-
     this.fitToTimeline();
   }
 
@@ -109,7 +102,7 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     // Later data refreshes must preserve a manually resized window.
     if (this._hasInitialSize) return;
     const groups = groupedTimeline().length;
-    const desired = 90 + (groups * 134);
+    const desired = 40 + (groups * 190);
     const viewportLimit = Math.max(360, (globalThis.innerWidth ?? 1280) - 120);
     const width = Math.min(Math.max(desired, 360), viewportLimit);
     const scale = Number(game.settings.get(MODULE_ID, "scale") ?? 1);
@@ -122,16 +115,6 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (this.minimized) return;
     if (typeof position.width === "number") position.width = Math.max(360, position.width);
     if (typeof position.height === "number") position.height = Math.max(220, position.height);
-  }
-
-  async _preRender(context, options) {
-    await this._initiativeMenu?.close({ animate: false });
-    return super._preRender(context, options);
-  }
-
-  async _onClose(options) {
-    await this._initiativeMenu?.close({ animate: false });
-    await super._onClose(options);
   }
 
   async _onTickKeydown(event) {
@@ -175,13 +158,21 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.render();
   }
 
+  static async _onRollInitiative(_event, target) {
+    const combatant = getCombatant(target.dataset.id);
+    if (!canRollInitiative(combatant)) return;
+    await rollInitiative(combatant);
+    await this.render();
+  }
+
   static async _onCycleScale() {
     const current = Number(game.settings.get(MODULE_ID, "scale") ?? 1);
     const values = [0.5, 0.75, 1, 1.25, 1.5];
     const currentIndex = values.findIndex(value => Math.abs(value - current) < 0.01);
     const next = values[(currentIndex + 1 + values.length) % values.length];
     await game.settings.set(MODULE_ID, "scale", next);
-    this.fitToTimeline();
+    // Settings callbacks need not be awaited by Foundry.
+    await this.render({ parts: ["main"] });
   }
 
   static async _onToggleLimit() {
@@ -194,7 +185,7 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     await game.combat.setFlag(MODULE_ID, "totalTicks", 0);
     if (!game.combat.started) await game.combat.startCombat();
     await normalizeTicks();
-    this.render();
+    await this.render();
   }
 
   static async _onEndCombat() {

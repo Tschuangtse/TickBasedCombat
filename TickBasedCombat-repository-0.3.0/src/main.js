@@ -2,6 +2,7 @@ import { clearEvents, getCombatantAndEventsList, isNormalizationAuthority, norma
 import { TimelineApp } from "./timeline.js";
 import { getTimelineApp, setTimelineApp } from "./state.js";
 import { refreshTokenHighlight, refreshTokenHighlights } from "./tokenHighlights.js";
+import { getEncounterChoices, openTimeline, updateTimelineScale } from "./timelineControls.js";
 
 const MODULE_ID = "tick-combat";
 const MODULE_TITLE = "Tick Combat";
@@ -33,35 +34,41 @@ function replaceCombatTracker(_app, element) {
   panel.className = "tick-combat-sidebar";
 
   const explanation = document.createElement("p");
-  explanation.textContent = "Tick Combat replaces the standard combat tracker.";
+  explanation.textContent = "Kämpfe werden über die Tick-Leiste gesteuert.";
   panel.append(explanation);
 
   const button = document.createElement("button");
   button.type = "button";
   button.dataset.tickCombatLauncher = "true";
   button.classList.add("tick-combat-launcher");
-  button.innerHTML = '<i class="fa-solid fa-stopwatch"></i><span>Timeline</span>';
-  button.title = "Open Tick Combat timeline";
+  button.innerHTML = '<i class="fa-solid fa-stopwatch"></i><span>Tick-Leiste öffnen</span>';
+  button.title = "Tick-Leiste öffnen und in den Vordergrund holen";
   button.addEventListener("click", async () => {
     const timeline = getTimelineApp();
     if (!timeline) return;
-    await timeline.render({ force: true });
-    timeline.fitToTimeline?.();
+    await openTimeline(timeline);
   });
 
   panel.append(button);
 
   if (game.user?.isGM) {
+    const encounterLabel = document.createElement("label");
+    encounterLabel.className = "tick-combat-encounter-select";
+    const caption = document.createElement("span");
+    caption.textContent = "Begegnung auswählen";
     const encounters = document.createElement("select");
-    encounters.ariaLabel = "Encounter";
+    encounters.ariaLabel = "Begegnung auswählen";
+    encounters.title = "Wählt den Kampf aus, der in der Tick-Leiste angezeigt wird.";
     const empty = document.createElement("option");
-    empty.textContent = "Select encounter";
+    empty.textContent = "Keine Begegnung ausgewählt";
     empty.value = "";
+    empty.disabled = true;
+    empty.selected = !game.combat;
     encounters.append(empty);
-    for (const combat of game.combats ?? []) {
+    for (const combat of getEncounterChoices(game.combats ?? [])) {
       const option = document.createElement("option");
       option.value = combat.id;
-      option.textContent = combat.name || combat.scene?.name || combat.id;
+      option.textContent = combat.label;
       option.selected = combat.id === game.combat?.id;
       encounters.append(option);
     }
@@ -71,10 +78,12 @@ function replaceCombatTracker(_app, element) {
       await combat.activate();
       await refreshTimeline({ open: true });
     });
-    panel.append(encounters);
+    encounterLabel.append(caption, encounters);
+    // With only one encounter there is nothing to switch.
+    if ((game.combats?.size ?? 0) > 1) panel.append(encounterLabel);
     const create = document.createElement("button");
     create.type = "button";
-    create.textContent = "Create encounter";
+    create.textContent = "Neue Begegnung";
     create.addEventListener("click", async () => {
       if (!game.user?.isGM) return;
       await foundry.documents.Combat.implementation.create({
@@ -104,10 +113,7 @@ Hooks.once("init", () => {
       1.25: "125%",
       1.5: "150%"
     },
-    onChange: value => {
-      const app = getTimelineApp();
-      if (app?.rendered) app.setPosition({ scale: Number(value) || 1 });
-    }
+    onChange: value => updateTimelineScale(getTimelineApp(), value)
   });
 
   game.settings.register(MODULE_ID, "visibleTickGroups", {

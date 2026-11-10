@@ -48,15 +48,27 @@
 
         {{#each this.items}}
           <article class="tick-combat-card {{#if this.isWaiting}}is-waiting{{/if}} {{#if this.isHidden}}is-hidden{{/if}}" {{#unless this.isEvent}}data-combatant-id="{{this.id}}"{{/unless}}>
+            <div class="tick-combat-card-heading">
             <button
               type="button"
               class="tick-combat-name"
               data-action="editItem"
               data-id="{{this.id}}"
-              title="{{this.notes}}"
+              title="{{this.name}}{{#if this.notes}} — {{this.notes}}{{/if}}"
             >
               {{this.name}}
             </button>
+            {{#if this.canRollInitiative}}
+              <button
+                type="button"
+                class="tick-combat-initiative"
+                data-action="rollInitiative"
+                data-id="{{this.id}}"
+                title="Initialen Tick-Wert würfeln (vor Kampfbeginn erneut möglich)"
+                aria-label="Initialen Tick-Wert für {{this.name}} würfeln"
+              ><i class="fa-solid fa-dice-d6" aria-hidden="true"></i></button>
+            {{/if}}
+            </div>
 
             {{#if this.notes}}
               <div class="tick-combat-notes">{{this.notes}}</div>
@@ -111,6 +123,6 @@
   </div>
 
   <footer class="tick-combat-help">
-    Click a name to edit (GM). Shift-click to ping. Right-click to roll initiative before combat. Enter a tick cost and press Enter to advance (GM).
+    Click a name to edit (GM). Shift-click to ping. Use the dice button to roll initial ticks before combat. Enter a tick cost and press Enter to advance (GM).
   </footer>
 </section>

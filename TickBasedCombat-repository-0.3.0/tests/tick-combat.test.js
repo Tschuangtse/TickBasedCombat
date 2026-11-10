@@ -145,9 +145,15 @@ test("initiative is restricted to GM or owner before combat starts", () => {
 
 test("initiative evaluates the requested formula and writes the initial tick value", async () => {
   const { combat, values } = encounter([0], { started: false });
-  globalThis.document = { createElement: () => ({}) };
+  globalThis.document = { createElement: () => ({
+    attributes: [],
+    set className(value) { this.attributes.push({ name: "class", value }); }
+  }) };
   globalThis.foundry = {
-    applications: { api: { DialogV2: { input: async () => ({ reaction: 12, impairment: 3 }) } } },
+    applications: { api: { DialogV2: { input: async ({ content }) => {
+      assert.equal(content.attributes.length, 0, "DialogV2 content must have no attributes");
+      return { reaction: 12, impairment: 3 };
+    } } } },
     dice: { Roll: class {
       constructor(formula, data) {
         assert.equal(formula, "30 - @reaction + @impairment - 1d6");
@@ -158,6 +164,10 @@ test("initiative evaluates the requested formula and writes the initial tick val
   };
   await rollInitiative(combat.combatants[0]);
   assert.deepEqual(values(), [17]);
+  combat.combatants[0].data = JSON.stringify({ ticks: 99, isWaiting: true });
+  await rollInitiative(combat.combatants[0]);
+  assert.deepEqual(values(), [17], "Reroll replaces the previous initial tick value");
+  assert.equal(getCombatantData(combat.combatants[0]).isWaiting, false);
   foundry.applications.api.DialogV2.input = async () => {
     combat.started = true;
     return { reaction: 0, impairment: 0 };

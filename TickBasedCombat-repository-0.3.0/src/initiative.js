@@ -13,16 +13,17 @@ export async function rollInitiative(combatant) {
   if (!canRollInitiative(combatant)) return;
   const combat = combatant.parent;
   const content = document.createElement("div");
-  content.className = "tick-combat-dialog";
   content.innerHTML = `
+    <div class="tick-combat-dialog">
     <div class="tick-combat-fields">
       <label class="tick-combat-field"><span>Reaktionsvermögen</span>
-        <input name="reaction" type="number" min="0" step="1" value="0" required autofocus>
+        <input class="tick-combat-initiative-input" name="reaction" type="number" min="0" step="1" value="0" required autofocus>
       </label>
       <label class="tick-combat-field"><span>Beeinträchtigung</span>
-        <input name="impairment" type="number" min="0" step="1" value="0" required>
+        <input class="tick-combat-initiative-input" name="impairment" type="number" min="0" step="1" value="0" required>
       </label>
       <p>Initiale Ticks = 30 − Reaktionsvermögen + Beeinträchtigung − 1W6</p>
+    </div>
     </div>`;
   const result = await foundry.applications.api.DialogV2.input({
     window: { title: `Initiative: ${combatant.name}` },
