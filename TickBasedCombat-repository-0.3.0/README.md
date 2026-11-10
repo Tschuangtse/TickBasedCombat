@@ -8,7 +8,7 @@ This branch/release is the Foundry VTT V14 / ApplicationV2 port of the original 
 
 - Foundry Virtual Tabletop: V14
 - Verified: 14.367
-- Module version: 0.3.6
+- Module version: 0.3.7
 
 ## Installation
 
@@ -27,6 +27,11 @@ In Foundry VTT Setup:
 - The module keeps the original package ID `tick-combat` so existing world flags remain accessible.
 - Legacy combatant data stored as JSON strings is still supported.
 - This V14 port should initially be tested on a copy of a world. The automated checks do not replace an in-world function test.
+
+## Changes in 0.3.7
+
+- Complex-action titles are centered on combatant cards.
+- The duration field has dedicated up/down buttons so the controls remain visible even when Foundry hides native number-input arrows. It starts at 8, steps by 8, and still accepts direct typing.
 
 ## Changes in 0.3.6
 

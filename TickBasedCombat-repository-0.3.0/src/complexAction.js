@@ -4,6 +4,14 @@ import { COMPLEX_ACTION_INTERVAL, isComplexActionDuration } from "./complexActio
 const pendingUpdates = new WeakSet();
 const pendingDialogs = new WeakSet();
 
+function stepDuration(target, direction) {
+  const input = target.closest(".tick-combat-duration")?.querySelector('input[name="duration"]');
+  if (!input) return;
+  input.stepUp(direction);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 export function canManageComplexAction(combatant) {
   return Boolean(combatant && combatant.parent === game.combat && !combatant.hidden
     && !combatant.token?.hidden && !combatant.isDefeated
@@ -81,12 +89,20 @@ export async function promptComplexAction() {
         <input name="name" type="text" required autofocus autocomplete="off">
       </label>
       <label class="tick-combat-field"><span>Total duration (ticks)</span>
-        <input class="tick-combat-initiative-input" name="duration" type="number" min="8" step="8" value="8" required>
+        <span class="tick-combat-duration">
+          <input class="tick-combat-duration-input" name="duration" aria-label="Total duration (ticks)" type="number" min="8" step="8" value="8" required>
+          <button type="button" class="tick-combat-duration-step" data-action="increaseComplexDuration" title="Increase duration by 8 ticks" aria-label="Increase duration by 8 ticks"><i class="fa-solid fa-caret-up" aria-hidden="true"></i></button>
+          <button type="button" class="tick-combat-duration-step" data-action="decreaseComplexDuration" title="Decrease duration by 8 ticks" aria-label="Decrease duration by 8 ticks"><i class="fa-solid fa-caret-down" aria-hidden="true"></i></button>
+        </span>
       </label>
     </div></div>`;
     const result = await foundry.applications.api.DialogV2.input({
       window: { title: "Complex action" },
       content, modal: true, rejectClose: false,
+      actions: {
+        increaseComplexDuration: (_event, target) => stepDuration(target, 1),
+        decreaseComplexDuration: (_event, target) => stepDuration(target, -1)
+      },
       ok: { label: "Begin action", icon: "fa-solid fa-hourglass-start" }
     });
     if (!result) return false;
