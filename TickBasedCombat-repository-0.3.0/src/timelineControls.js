@@ -14,8 +14,8 @@ export async function updateTimelineScale(app, value) {
 
 export function getEncounterChoices(combats) {
   return [...combats].map((combat, index) => {
-    const label = combat.name?.trim() || combat.scene?.name?.trim() || `Begegnung ${index + 1}`;
-    const state = combat.started ? "läuft" : "nicht gestartet";
+    const label = combat.name?.trim() || combat.scene?.name?.trim() || `Encounter ${index + 1}`;
+    const state = combat.started ? "in progress" : "not started";
     return { id: combat.id, label: `${label} (${state})` };
   });
 }

@@ -222,7 +222,6 @@ async function normalizeCombat(combat) {
   const normalization = asInteger(active[0].ticks, 0);
   if (normalization === 0) return;
 
-  const options = { tickCombatNormalization: true };
   const updates = active.filter(item => !item.isEvent).map(item => ({
     _id: item.id,
     "flags.tick-combat.data": JSON.stringify({
@@ -230,17 +229,21 @@ async function normalizeCombat(combat) {
       ticks: asInteger(item.ticks, 0) - normalization
     })
   }));
-  if (updates.length) await combat.updateEmbeddedDocuments("Combatant", updates, options);
+  if (updates.length) {
+    await combat.updateEmbeddedDocuments("Combatant", updates, { tickCombatNormalization: true });
+  }
 
   const events = getEvents(combat).map(event => event.isWaiting ? event : {
     ...event, ticks: asInteger(event.ticks, 0) - normalization
   });
   const totalTicks = asInteger(combat.getFlag(MODULE_ID, "totalTicks"), 0);
+  // Embedded updates add their parent to the operation. Never reuse that
+  // operation for the world-level Combat update.
   await combat.update({
     "flags.tick-combat.events": events,
     // Corrections to earlier tick positions must not reduce elapsed time.
     "flags.tick-combat.totalTicks": totalTicks + Math.max(0, normalization)
-  }, options);
+  }, { tickCombatNormalization: true });
 
   const app = getTimelineApp();
   app?.render();

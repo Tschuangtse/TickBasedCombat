@@ -34,15 +34,15 @@ function replaceCombatTracker(_app, element) {
   panel.className = "tick-combat-sidebar";
 
   const explanation = document.createElement("p");
-  explanation.textContent = "Kämpfe werden über die Tick-Leiste gesteuert.";
+  explanation.textContent = "Combat is managed through the tick timeline.";
   panel.append(explanation);
 
   const button = document.createElement("button");
   button.type = "button";
   button.dataset.tickCombatLauncher = "true";
   button.classList.add("tick-combat-launcher");
-  button.innerHTML = '<i class="fa-solid fa-stopwatch"></i><span>Tick-Leiste öffnen</span>';
-  button.title = "Tick-Leiste öffnen und in den Vordergrund holen";
+  button.innerHTML = '<i class="fa-solid fa-stopwatch"></i><span>Open timeline</span>';
+  button.title = "Open the tick timeline and bring it to the front";
   button.addEventListener("click", async () => {
     const timeline = getTimelineApp();
     if (!timeline) return;
@@ -55,12 +55,12 @@ function replaceCombatTracker(_app, element) {
     const encounterLabel = document.createElement("label");
     encounterLabel.className = "tick-combat-encounter-select";
     const caption = document.createElement("span");
-    caption.textContent = "Begegnung auswählen";
+    caption.textContent = "Select encounter";
     const encounters = document.createElement("select");
-    encounters.ariaLabel = "Begegnung auswählen";
-    encounters.title = "Wählt den Kampf aus, der in der Tick-Leiste angezeigt wird.";
+    encounters.ariaLabel = "Select encounter";
+    encounters.title = "Select the combat encounter shown in the timeline.";
     const empty = document.createElement("option");
-    empty.textContent = "Keine Begegnung ausgewählt";
+    empty.textContent = "No encounter selected";
     empty.value = "";
     empty.disabled = true;
     empty.selected = !game.combat;
@@ -83,7 +83,7 @@ function replaceCombatTracker(_app, element) {
     if ((game.combats?.size ?? 0) > 1) panel.append(encounterLabel);
     const create = document.createElement("button");
     create.type = "button";
-    create.textContent = "Neue Begegnung";
+    create.textContent = "Create encounter";
     create.addEventListener("click", async () => {
       if (!game.user?.isGM) return;
       await foundry.documents.Combat.implementation.create({

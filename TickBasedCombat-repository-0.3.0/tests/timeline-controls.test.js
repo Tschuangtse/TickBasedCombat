@@ -117,7 +117,7 @@ test("unnamed encounters use descriptive labels instead of internal IDs", () => 
     { id: "secret-id-3" }
   ]);
   assert.deepEqual(choices.map(choice => choice.label), [
-    "Brückenkampf (läuft)", "Wald (nicht gestartet)", "Begegnung 3 (nicht gestartet)"
+    "Brückenkampf (in progress)", "Wald (not started)", "Encounter 3 (not started)"
   ]);
   assert.equal(choices[2].id, "secret-id-3");
 });

@@ -8,7 +8,7 @@ This branch/release is the Foundry VTT V14 / ApplicationV2 port of the original 
 
 - Foundry Virtual Tabletop: V14
 - Verified: 14.367
-- Module version: 0.3.4
+- Module version: 0.3.5
 
 ## Installation
 
@@ -28,6 +28,11 @@ In Foundry VTT Setup:
 - Legacy combatant data stored as JSON strings is still supported.
 - This V14 port should initially be tested on a copy of a world. The automated checks do not replace an in-world function test.
 
+## Changes in 0.3.5
+
+- Fixed elapsed tick counting after advancing combatants: embedded Combatant updates and world-level Combat updates now use separate operation objects, preventing Foundry from treating the Combat itself as an embedded document.
+- Tracker controls, encounter labels, initiative fields, tooltips, and validation messages now default to English.
+
 ## Changes in 0.3.4
 
 - Removed the initiative context menu and its lifecycle error, which interrupted timeline redraws after starting combat or reopening the timeline.
@@ -41,7 +46,7 @@ In Foundry VTT Setup:
 
 - The Combat sidebar uses Tick Combat in place of the standard participant list and round/turn controls. GMs can create and select encounters there, and everyone can reopen the timeline.
 - Every visible, undefeated combatant at tick 0 has a gold outline around its battlemap token. This does not change token selection, targeting, or permissions.
-- Before combat starts, use the dice button beside an owned combatant name (or any combatant as GM). Enter **Reaktionsvermögen** and **Beeinträchtigung**, both whole numbers starting at 0. Initial ticks are `30 - Reaktionsvermögen + Beeinträchtigung - 1d6`. Results stay absolute until combat starts and may be rerolled before then.
+- Before combat starts, use the dice button beside an owned combatant name (or any combatant as GM). Enter **Reaction** and **Impairment**, both whole numbers starting at 0. Initial ticks are `30 - Reaction + Impairment - 1d6`. Results stay absolute until combat starts and may be rerolled before then.
 - The timeline counter shows ticks elapsed since combat started. Advancing a group counts the shared time step once; waiting combatants do not block time. Manual corrections to earlier ticks never reduce elapsed time.
 - Timeline scale now includes 50%. Drag the window corner to resize it, with a minimum of 360 × 220 layout pixels. Updates preserve the chosen size, and long content scrolls.
 - Use the **All / Next 3** button or the client setting **Visible combatant tick groups** to show only the next three distinct active combatant tick positions. All ties are included, waiting combatants remain visible, and events up to the last visible position are shown. This filter does not affect time advancement.

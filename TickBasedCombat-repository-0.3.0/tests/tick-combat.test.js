@@ -11,10 +11,15 @@ function encounter(ticks, { started = true, events = [], waiting = [] } = {}) {
     started, flags: { events, totalTicks: 0 },
     getFlag(_scope, key) { return this.flags[key]; },
     async update(changes, options) {
+      if (options?.parent) {
+        throw new Error("Combat is not a valid embedded Document within the Combat Document");
+      }
       writes.push({ changes, options });
       for (const [key, value] of Object.entries(changes)) this.flags[key.split(".").at(-1)] = value;
     },
     async updateEmbeddedDocuments(_type, updates, options) {
+      // Foundry adds the owning document to the supplied operation object.
+      options.parent = this;
       writes.push({ updates, options });
       for (const update of updates) {
         this.combatants.find(item => item.id === update._id).data = update["flags.tick-combat.data"];
@@ -45,6 +50,20 @@ test("initiative remains absolute before combat starts", async () => {
   await normalizeTicks();
   assert.deepEqual(values(), [0, 4]);
   assert.equal(combat.flags.totalTicks, 19);
+});
+
+test("embedded update options do not leak into the combat counter update", async () => {
+  const { combat, values, writes } = encounter([2, 5, 6, 16]);
+  await normalizeTicks();
+  assert.deepEqual(values(), [0, 3, 4, 14]);
+  assert.equal(combat.flags.totalTicks, 2);
+  assert.equal(writes[0].options.parent, combat);
+  assert.equal(Object.hasOwn(writes[1].options, "parent"), false);
+
+  await setTicks(combat.combatants[0], 32);
+  await Promise.all([normalizeTicks(), normalizeTicks()]);
+  assert.deepEqual(values(), [29, 0, 1, 11]);
+  assert.equal(combat.flags.totalTicks, 5);
 });
 
 test("a tied group advances once, repeated concurrent requests do not double count", async () => {
