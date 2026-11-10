@@ -8,7 +8,7 @@ This branch/release is the Foundry VTT V14 / ApplicationV2 port of the original 
 
 - Foundry Virtual Tabletop: V14
 - Verified: 14.367
-- Module version: 0.3.0
+- Module version: 0.3.3
 
 ## Installation
 
@@ -26,9 +26,9 @@ In Foundry VTT Setup:
 
 - The module keeps the original package ID `tick-combat` so existing world flags remain accessible.
 - Legacy combatant data stored as JSON strings is still supported.
-- Version 0.3.0 is a V14 test/beta port and should initially be tested on a copy of a world.
+- This V14 port should initially be tested on a copy of a world. The automated checks do not replace an in-world function test.
 
-## Working changes (unreleased)
+## Changes in 0.3.3
 
 - The Combat sidebar uses Tick Combat in place of the standard participant list and round/turn controls. GMs can create and select encounters there, and everyone can reopen the timeline.
 - Every visible, undefeated combatant at tick 0 has a gold outline around its battlemap token. This does not change token selection, targeting, or permissions.
@@ -41,7 +41,7 @@ In Foundry VTT Setup:
 
 Run `npm test` (or `node --test`) with Node.js. The tests use Foundry API doubles; they do not replace an in-world Foundry V14 check of rendering, permissions, and multiplayer behavior.
 
-Before releasing these changes, check the replacement sidebar and its popout; two simultaneous tick-0 tokens and their movement/visibility; initiative as GM and player before/after combat start; tied combatants and elapsed ticks; resize/scroll at 50% scale; and the 0, 0, 4, 7, 7, 9 display example.
+For the in-world function test, check the replacement sidebar and its popout; two simultaneous tick-0 tokens and their movement/visibility; initiative as GM and player before/after combat start; tied combatants and elapsed ticks; resize/scroll at 50% scale; and the 0, 0, 4, 7, 7, 9 display example.
 
 ## Repository
 
