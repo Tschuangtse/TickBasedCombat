@@ -4,6 +4,24 @@ import { COMPLEX_ACTION_INTERVAL, isComplexActionDuration } from "./complexActio
 const pendingUpdates = new WeakSet();
 const pendingDialogs = new WeakSet();
 
+function escapeChatText(value) {
+  return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
+async function announceComplexAction(combatant, name, outcome) {
+  const actorName = combatant.name ?? combatant.actor?.name ?? "Combatant";
+  try {
+    const ChatMessage = foundry.documents.ChatMessage;
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: combatant.actor, token: combatant.token, alias: actorName }),
+      content: `${escapeChatText(actorName)} hat die Handlung ${escapeChatText(name)} ${outcome}.`
+    });
+  } catch (error) {
+    console.error("Tick Based Combat | Could not post complex action outcome", error);
+    ui.notifications?.warn("The complex action was updated, but its chat message could not be posted.");
+  }
+}
+
 function stepDuration(target, direction) {
   const input = target.closest(".tick-combat-duration")?.querySelector('input[name="duration"]');
   if (!input) return;
@@ -41,6 +59,7 @@ export async function beginComplexAction(combatant, { name, duration }) {
       complexAction: duration > COMPLEX_ACTION_INTERVAL
         ? { name, duration, spent: COMPLEX_ACTION_INTERVAL } : null
     });
+    if (duration === COMPLEX_ACTION_INTERVAL) await announceComplexAction(combatant, name, "beendet");
     await normalizeTicks(combatant.parent);
     return true;
   } finally { pendingUpdates.delete(combatant); }
@@ -64,7 +83,20 @@ export async function advanceComplexAction(combatant) {
       ticks: COMPLEX_ACTION_INTERVAL,
       complexAction: spent < action.duration ? { ...action, spent } : null
     });
+    if (spent === action.duration) await announceComplexAction(combatant, action.name, "beendet");
     await normalizeTicks(combatant.parent);
+    return true;
+  } finally { pendingUpdates.delete(combatant); }
+}
+
+export async function cancelComplexAction(combatant) {
+  if (!canManageComplexAction(combatant) || pendingUpdates.has(combatant)) return false;
+  const data = getCombatantData(combatant);
+  if (!data.complexAction) return false;
+  pendingUpdates.add(combatant);
+  try {
+    await setCombatantData(combatant, { ...data, complexAction: null });
+    await announceComplexAction(combatant, data.complexAction.name, "abgebrochen");
     return true;
   } finally { pendingUpdates.delete(combatant); }
 }

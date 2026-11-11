@@ -109,15 +109,15 @@
 }
 
 .tick-combat-card--low {
-  --tick-combat-card-tint: #ECFCCA30;
+  --tick-combat-card-tint: #BBF45140;
 }
 
 .tick-combat-card--medium {
-  --tick-combat-card-tint: #FFF08530;
+  --tick-combat-card-tint: #FFF08540;
 }
 
 .tick-combat-card--high {
-  --tick-combat-card-tint: #FFA2A230;
+  --tick-combat-card-tint: #FFA2A240;
 }
 
 .tick-combat-card[data-combatant-id] {
@@ -175,13 +175,17 @@
   text-align: center;
 }
 
-.tick-combat-complex-advance {
-  width: 100%;
-  min-height: 30px;
-  height: auto;
-  margin: 0;
-  padding: 0.25rem;
+.tick-combat-complex-actions {
+  flex-wrap: nowrap;
+}
+
+.tick-combat-complex-actions .tick-combat-complex-advance {
+  flex: 1 1 0;
   white-space: normal;
+}
+
+.tick-combat-complex-actions button[data-action="cancelComplexAction"] {
+  flex: 0 0 auto;
 }
 
 .tick-combat-card.is-hidden {

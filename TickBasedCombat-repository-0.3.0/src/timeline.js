@@ -15,7 +15,7 @@ import {
 import { editEvent } from "./editEvent.js";
 import { canRollInitiative, rollInitiative } from "./initiative.js";
 import { groupTimeline } from "./timelineView.js";
-import { advanceComplexAction, canAdvanceComplexAction, canManageComplexAction, promptComplexAction } from "./complexAction.js";
+import { advanceComplexAction, canAdvanceComplexAction, cancelComplexAction, canManageComplexAction, promptComplexAction } from "./complexAction.js";
 
 const MODULE_ID = "tick-combat";
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -49,6 +49,7 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       addEvent: this._onAddEvent,
       beginComplexAction: this._onBeginComplexAction,
       advanceComplexAction: this._onAdvanceComplexAction,
+      cancelComplexAction: this._onCancelComplexAction,
       cycleScale: this._onCycleScale,
       toggleLimit: this._onToggleLimit,
       startCombat: this._onStartCombat,
@@ -183,6 +184,10 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
   static async _onAdvanceComplexAction(_event, target) {
     await advanceComplexAction(getCombatant(target.dataset.id));
     await this.render();
+  }
+
+  static async _onCancelComplexAction(_event, target) {
+    if (await cancelComplexAction(getCombatant(target.dataset.id))) await this.render();
   }
 
   static async _onCycleScale() {

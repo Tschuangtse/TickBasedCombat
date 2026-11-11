@@ -111,9 +111,14 @@
                   {{this.complexAction.spent}}/{{this.complexAction.duration}} ticks
                 </div>
                 {{#if this.canManageComplexAction}}
-                  <button type="button" class="tick-combat-complex-advance" data-action="advanceComplexAction" data-id="{{this.id}}" {{#unless this.canAdvanceComplexAction}}disabled{{/unless}} title="Advance the next 8 ticks when this combatant reaches tick 0">
-                    <i class="fa-solid fa-forward-step"></i> Next 8 ticks
-                  </button>
+                  <div class="tick-combat-card-actions tick-combat-complex-actions">
+                    <button type="button" class="tick-combat-complex-advance" data-action="advanceComplexAction" data-id="{{this.id}}" {{#unless this.canAdvanceComplexAction}}disabled{{/unless}} title="Advance the next 8 ticks when this combatant reaches tick 0">
+                      <i class="fa-solid fa-forward-step"></i> Next 8 ticks
+                    </button>
+                    <button type="button" data-action="cancelComplexAction" data-id="{{this.id}}" title="Cancel complex action" aria-label="Cancel complex action">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
                 {{/if}}
               {{else}}
                 {{#if ../../isGM}}

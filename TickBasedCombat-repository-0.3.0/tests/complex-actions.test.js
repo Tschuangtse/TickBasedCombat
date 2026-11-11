@@ -1,12 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { advanceComplexAction, beginComplexAction, canAdvanceComplexAction,
+import { advanceComplexAction, beginComplexAction, canAdvanceComplexAction, cancelComplexAction,
   getSelectedCombatant, promptComplexAction } from "../src/complexAction.js";
 import { getCombatantData, getCombatantInfo, normalizeTicks, setNote, setTicks, toggleWaiting } from "../src/data.js";
 import { isComplexActionDuration } from "../src/complexActionData.js";
 
 function fixture({ started = false } = {}) {
   const warnings = [];
+  const messages = [];
+  globalThis.foundry = { documents: { ChatMessage: {
+    getSpeaker: ({ alias }) => ({ alias }),
+    async create(message) { messages.push(message); }
+  } } };
   const combat = {
     started, flags: { events: [], totalTicks: 0 },
     getFlag(_scope, key) { return this.flags[key]; },
@@ -31,7 +36,7 @@ function fixture({ started = false } = {}) {
   globalThis.canvas = { tokens: { controlled: [token] } };
   globalThis.ui = { notifications: { warn: message => warnings.push(message) } };
   globalThis.document = { createElement: () => ({ attributes: [] }) };
-  return { combat, actor: combat.combatants[0], other: combat.combatants[1], token, warnings };
+  return { combat, actor: combat.combatants[0], other: combat.combatants[1], token, warnings, messages };
 }
 
 test("durations must be safe whole multiples of eight, starting at eight", () => {
@@ -63,7 +68,8 @@ test("beginning an action costs eight ticks and preserves the other combatant da
 });
 
 test("a full 32 tick action completes immediately when the last interval is committed", async () => {
-  const { actor, other, combat } = fixture({ started: true });
+  const { actor, other, combat, messages } = fixture({ started: true });
+  actor.name = "Lene";
   await beginComplexAction(actor, { name: "Ritual", duration: 32 });
   assert.equal(canAdvanceComplexAction(actor), false);
   assert.equal(await advanceComplexAction(actor), false);
@@ -83,13 +89,30 @@ test("a full 32 tick action completes immediately when the last interval is comm
   await normalizeTicks();
   assert.equal(getCombatantData(actor).ticks, 0);
   assert.equal(combat.flags.totalTicks, 32);
+  assert.deepEqual(messages.map(message => message.content), ["Lene hat die Handlung Ritual beendet."]);
 });
 
 test("an eight tick action immediately returns to normal with eight ticks scheduled", async () => {
-  const { actor } = fixture();
+  const { actor, messages } = fixture();
   assert.equal(await beginComplexAction(actor, { name: "Short action", duration: 8 }), true);
   assert.equal(getCombatantData(actor).ticks, 8);
   assert.equal(getCombatantData(actor).complexAction, null);
+  assert.equal(messages.length, 1);
+});
+
+test("cancellation preserves scheduled ticks and posts one escaped message", async () => {
+  const { actor, messages } = fixture();
+  actor.name = "A & B";
+  await beginComplexAction(actor, { name: "<Ritual>", duration: 32 });
+  game.user.isGM = false;
+  actor.isOwner = false;
+  assert.equal(await cancelComplexAction(actor), false);
+  assert.equal(messages.length, 0);
+  actor.isOwner = true;
+  assert.deepEqual(await Promise.all([cancelComplexAction(actor), cancelComplexAction(actor)]), [true, false]);
+  assert.equal(getCombatantData(actor).ticks, 8);
+  assert.equal(getCombatantInfo(actor).complexAction, null);
+  assert.deepEqual(messages.map(message => message.content), ["A &amp; B hat die Handlung &lt;Ritual&gt; abgebrochen."]);
 });
 
 test("concurrent clicks commit only one interval", async () => {
@@ -169,5 +192,5 @@ test("invalid input or changing selection while the dialog is open does not modi
 });
 
 function foundryStub(input) {
-  globalThis.foundry = { applications: { api: { DialogV2: { input } } } };
+  globalThis.foundry.applications = { api: { DialogV2: { input } } };
 }
