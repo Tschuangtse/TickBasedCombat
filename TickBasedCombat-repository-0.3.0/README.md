@@ -8,7 +8,7 @@ This branch/release is the Foundry VTT V14 / ApplicationV2 port of the original 
 
 - Foundry Virtual Tabletop: V14
 - Verified: 14.367
-- Module version: 0.3.7
+- Module version: 0.3.8
 
 ## Installation
 

@@ -108,6 +108,22 @@
   background: var(--color-cool-5-75, rgba(20, 20, 20, 0.55));
 }
 
+.tick-combat-card--low {
+  --tick-combat-card-tint: #ECFCCA30;
+}
+
+.tick-combat-card--medium {
+  --tick-combat-card-tint: #FFF08530;
+}
+
+.tick-combat-card--high {
+  --tick-combat-card-tint: #FFA2A230;
+}
+
+.tick-combat-card[data-combatant-id] {
+  background-image: linear-gradient(var(--tick-combat-card-tint, transparent), var(--tick-combat-card-tint, transparent));
+}
+
 .tick-combat-card > * {
   flex-shrink: 0;
   min-width: 0;

@@ -52,7 +52,7 @@
         </div>
 
         {{#each this.items}}
-          <article class="tick-combat-card {{#if this.isWaiting}}is-waiting{{/if}} {{#if this.isHidden}}is-hidden{{/if}}" {{#unless this.isEvent}}data-combatant-id="{{this.id}}"{{/unless}}>
+          <article class="tick-combat-card {{#if this.tickBand}}tick-combat-card--{{this.tickBand}}{{/if}} {{#if this.isWaiting}}is-waiting{{/if}} {{#if this.isHidden}}is-hidden{{/if}}" {{#unless this.isEvent}}data-combatant-id="{{this.id}}"{{/unless}}>
             <div class="tick-combat-card-heading">
             <button
               type="button"

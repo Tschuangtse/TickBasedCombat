@@ -73,6 +73,10 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const list = groupedTimeline();
     for (const group of list) {
       for (const item of group.items) {
+        if (!item.isEvent) {
+          const ticks = group.ticks;
+          item.tickBand = ticks >= 20 ? "high" : ticks >= 10 ? "medium" : "low";
+        }
         item.canRollInitiative = !item.isEvent && canRollInitiative(item.combatant);
         item.canManageComplexAction = !item.isEvent && canManageComplexAction(item.combatant);
         item.canAdvanceComplexAction = !item.isEvent && canAdvanceComplexAction(item.combatant);
