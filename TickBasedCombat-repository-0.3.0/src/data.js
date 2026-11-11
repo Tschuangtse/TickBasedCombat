@@ -237,7 +237,7 @@ async function normalizeCombat(combat) {
     })
   }));
   if (updates.length) {
-    await combat.updateEmbeddedDocuments(t("combatant"), updates, { tickCombatNormalization: true });
+    await combat.updateEmbeddedDocuments("Combatant", updates, { tickCombatNormalization: true });
   }
 
   const events = getEvents(combat).map(event => event.isWaiting ? event : {

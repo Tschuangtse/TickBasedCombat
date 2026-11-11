@@ -17,7 +17,8 @@ function encounter(ticks, { started = true, events = [], waiting = [] } = {}) {
       writes.push({ changes, options });
       for (const [key, value] of Object.entries(changes)) this.flags[key.split(".").at(-1)] = value;
     },
-    async updateEmbeddedDocuments(_type, updates, options) {
+    async updateEmbeddedDocuments(type, updates, options) {
+      assert.equal(type, "Combatant");
       // Foundry adds the owning document to the supplied operation object.
       options.parent = this;
       writes.push({ updates, options });
@@ -52,8 +53,9 @@ test("initiative remains absolute before combat starts", async () => {
   assert.equal(combat.flags.totalTicks, 19);
 });
 
-test("embedded update options do not leak into the combat counter update", async () => {
+test("German normalization uses the Combatant type and keeps update operations separate", async () => {
   const { combat, values, writes } = encounter([2, 5, 6, 16]);
+  globalThis.game.settings = { get: () => "de" };
   await normalizeTicks();
   assert.deepEqual(values(), [0, 3, 4, 14]);
   assert.equal(combat.flags.totalTicks, 2);
