@@ -1,6 +1,6 @@
 # Installation und Test — Tick Combat V14
 
-Diese Anleitung ist absichtlich detailliert. Die Version 0.3.9 ist ein **Test-Build für Foundry VTT Version 14** und wurde außerhalb einer laufenden Foundry-Instanz statisch geprüft. Teste sie zuerst in einer Kopie deiner Welt.
+Diese Anleitung ist absichtlich detailliert. Die Version 0.3.10 ist ein **Test-Build für Foundry VTT Version 14** und wurde außerhalb einer laufenden Foundry-Instanz statisch geprüft. Teste sie zuerst in einer Kopie deiner Welt.
 
 ## 1. Foundry vollständig beenden
 
@@ -61,7 +61,7 @@ Starte Foundry VTT 14.367.
 
 Gehe auf der Setup-Oberfläche zu den installierten Add-on Modules. Dort sollte nun erscheinen:
 
-**Tick Combat (Foundry V14)** — Version **0.3.9**
+**Tick Combat (Foundry V14)** — Version **0.3.10**
 
 Wenn das Modul hier nicht auftaucht, aktiviere noch keine Welt. Prüfe zuerst die Ordnerstruktur aus Schritt 5.
 

@@ -89,7 +89,7 @@ test("a full 32 tick action completes immediately when the last interval is comm
   await normalizeTicks();
   assert.equal(getCombatantData(actor).ticks, 0);
   assert.equal(combat.flags.totalTicks, 32);
-  assert.deepEqual(messages.map(message => message.content), ["Lene hat die Handlung Ritual beendet."]);
+  assert.deepEqual(messages.map(message => message.content), ["Lene finished the action Ritual."]);
 });
 
 test("an eight tick action immediately returns to normal with eight ticks scheduled", async () => {
@@ -112,7 +112,7 @@ test("cancellation preserves scheduled ticks and posts one escaped message", asy
   assert.deepEqual(await Promise.all([cancelComplexAction(actor), cancelComplexAction(actor)]), [true, false]);
   assert.equal(getCombatantData(actor).ticks, 8);
   assert.equal(getCombatantInfo(actor).complexAction, null);
-  assert.deepEqual(messages.map(message => message.content), ["A &amp; B hat die Handlung &lt;Ritual&gt; abgebrochen."]);
+  assert.deepEqual(messages.map(message => message.content), ["A &amp; B cancelled the action &lt;Ritual&gt;."]);
 });
 
 test("concurrent clicks commit only one interval", async () => {

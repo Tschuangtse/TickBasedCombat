@@ -1,3 +1,4 @@
+import { getLanguage, strings, t } from "./i18n.js";
 import {
   addEvent,
   getCombatant,
@@ -40,7 +41,6 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       scale: 1
     },
     window: {
-      title: "Timeline",
       icon: "fa-solid fa-stopwatch",
       resizable: true,
       minimizable: true
@@ -51,6 +51,7 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       advanceComplexAction: this._onAdvanceComplexAction,
       cancelComplexAction: this._onCancelComplexAction,
       cycleScale: this._onCycleScale,
+      toggleLanguage: this._onToggleLanguage,
       toggleLimit: this._onToggleLimit,
       startCombat: this._onStartCombat,
       endCombat: this._onEndCombat,
@@ -62,6 +63,10 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
       toggleHide: this._onToggleHide
     }
   };
+
+  get title() {
+    return t("timeline");
+  }
 
   static PARTS = {
     main: {
@@ -87,6 +92,8 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     return {
       ...context,
+      labels: strings(),
+      language: getLanguage().toUpperCase(),
       list,
       isGM: Boolean(game.user?.isGM),
       scale,
@@ -148,12 +155,12 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
   static async _onAddEvent() {
     if (!game.user?.isGM) return;
     if (!game.combat) {
-      ui.notifications?.warn("Create a combat encounter before adding a timeline event.");
+      ui.notifications?.warn(t("needEncounter"));
       return;
     }
 
     const eventData = {
-      name: "New Event",
+      name: t("newEvent"),
       isEvent: true,
       ticks: 100,
       ffwd: 1,
@@ -188,6 +195,10 @@ export class TimelineApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static async _onCancelComplexAction(_event, target) {
     if (await cancelComplexAction(getCombatant(target.dataset.id))) await this.render();
+  }
+
+  static async _onToggleLanguage() {
+    await game.settings.set(MODULE_ID, "language", getLanguage() === "en" ? "de" : "en");
   }
 
   static async _onCycleScale() {

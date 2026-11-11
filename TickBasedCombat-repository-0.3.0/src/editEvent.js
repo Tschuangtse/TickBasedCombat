@@ -1,3 +1,4 @@
+import { strings, t } from "./i18n.js";
 const TEMPLATE = "modules/tick-combat/templates/editEvent.hbs";
 
 function toInteger(value, fallback = 0) {
@@ -10,10 +11,10 @@ export async function editEvent(sourceData, callback) {
   data.isNew = !Object.hasOwn(data, "id");
 
   const title = data.isEvent
-    ? (data.isNew ? "New Event" : "Edit Event")
-    : (data.isNew ? "New Combatant" : "Edit Combatant");
+    ? (data.isNew ? t("newEvent") : t("editEvent"))
+    : (data.isNew ? t("newCombatant") : t("editCombatant"));
 
-  const html = await foundry.applications.handlebars.renderTemplate(TEMPLATE, data);
+  const html = await foundry.applications.handlebars.renderTemplate(TEMPLATE, { ...data, labels: strings() });
   const content = document.createElement("div");
   content.innerHTML = `<div class="tick-combat-dialog">${html}</div>`;
 
@@ -23,7 +24,7 @@ export async function editEvent(sourceData, callback) {
     modal: true,
     rejectClose: false,
     ok: {
-      label: "OK",
+      label: t("ok"),
       icon: "fa-solid fa-check"
     }
   });

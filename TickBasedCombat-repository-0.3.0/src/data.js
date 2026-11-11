@@ -1,3 +1,4 @@
+import { t } from "./i18n.js";
 import { getTimelineApp } from "./state.js";
 import { normalizeComplexAction } from "./complexActionData.js";
 
@@ -103,7 +104,7 @@ export function getCombatantInfo(combatant) {
   return {
     id: combatant.id,
     combatant,
-    name: combatant.name ?? combatant.actor?.name ?? "Combatant",
+    name: combatant.name ?? combatant.actor?.name ?? t("combatant"),
     isEvent: false,
     ticks: data.ticks,
     canWait: !data.complexAction && userCanWait(combatant) && data.ticks === 0,
@@ -137,7 +138,7 @@ export async function addEvent(event) {
     ...clone(event),
     id: crypto.randomUUID(),
     isEvent: true,
-    name: String(event?.name ?? "New Event"),
+    name: String(event?.name ?? t("newEvent")),
     notes: String(event?.notes ?? ""),
     ticks: asInteger(event?.ticks, 0),
     repeating: Boolean(event?.repeating),
@@ -163,7 +164,7 @@ export async function updateEvent(event) {
   const updated = {
     ...clone(event),
     isEvent: true,
-    name: String(event.name ?? "Event"),
+    name: String(event.name ?? t("event")),
     notes: String(event.notes ?? ""),
     ticks: asInteger(event.ticks, 0),
     repeating: Boolean(event.repeating),
@@ -236,7 +237,7 @@ async function normalizeCombat(combat) {
     })
   }));
   if (updates.length) {
-    await combat.updateEmbeddedDocuments("Combatant", updates, { tickCombatNormalization: true });
+    await combat.updateEmbeddedDocuments(t("combatant"), updates, { tickCombatNormalization: true });
   }
 
   const events = getEvents(combat).map(event => event.isWaiting ? event : {

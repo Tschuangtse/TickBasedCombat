@@ -1,3 +1,4 @@
+import { t } from "./i18n.js";
 import { getCombatantData, normalizeTicks, setCombatantData } from "./data.js";
 import { COMPLEX_ACTION_INTERVAL, isComplexActionDuration } from "./complexActionData.js";
 
@@ -9,16 +10,17 @@ function escapeChatText(value) {
 }
 
 async function announceComplexAction(combatant, name, outcome) {
-  const actorName = combatant.name ?? combatant.actor?.name ?? "Combatant";
+  const actorName = combatant.name ?? combatant.actor?.name ?? t("combatant");
   try {
     const ChatMessage = foundry.documents.ChatMessage;
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: combatant.actor, token: combatant.token, alias: actorName }),
-      content: `${escapeChatText(actorName)} hat die Handlung ${escapeChatText(name)} ${outcome}.`
+      content: t(outcome, { actor: escapeChatText(actorName), action: escapeChatText(name) }),
+      flags: { "tick-combat": { actionOutcome: { outcome, actor: actorName, action: name } } }
     });
   } catch (error) {
     console.error("Tick Based Combat | Could not post complex action outcome", error);
-    ui.notifications?.warn("The complex action was updated, but its chat message could not be posted.");
+    ui.notifications?.warn(t("chatFailed"));
   }
 }
 
@@ -59,7 +61,7 @@ export async function beginComplexAction(combatant, { name, duration }) {
       complexAction: duration > COMPLEX_ACTION_INTERVAL
         ? { name, duration, spent: COMPLEX_ACTION_INTERVAL } : null
     });
-    if (duration === COMPLEX_ACTION_INTERVAL) await announceComplexAction(combatant, name, "beendet");
+    if (duration === COMPLEX_ACTION_INTERVAL) await announceComplexAction(combatant, name, "actionFinished");
     await normalizeTicks(combatant.parent);
     return true;
   } finally { pendingUpdates.delete(combatant); }
@@ -83,7 +85,7 @@ export async function advanceComplexAction(combatant) {
       ticks: COMPLEX_ACTION_INTERVAL,
       complexAction: spent < action.duration ? { ...action, spent } : null
     });
-    if (spent === action.duration) await announceComplexAction(combatant, action.name, "beendet");
+    if (spent === action.duration) await announceComplexAction(combatant, action.name, "actionFinished");
     await normalizeTicks(combatant.parent);
     return true;
   } finally { pendingUpdates.delete(combatant); }
@@ -96,7 +98,7 @@ export async function cancelComplexAction(combatant) {
   pendingUpdates.add(combatant);
   try {
     await setCombatantData(combatant, { ...data, complexAction: null });
-    await announceComplexAction(combatant, data.complexAction.name, "abgebrochen");
+    await announceComplexAction(combatant, data.complexAction.name, "actionCancelled");
     return true;
   } finally { pendingUpdates.delete(combatant); }
 }
@@ -104,11 +106,11 @@ export async function cancelComplexAction(combatant) {
 export async function promptComplexAction() {
   const combatant = getSelectedCombatant();
   if (!canManageComplexAction(combatant)) {
-    ui.notifications?.warn("Select exactly one active combat token that you own.");
+    ui.notifications?.warn(t("selectToken"));
     return false;
   }
   if (getCombatantData(combatant).complexAction) {
-    ui.notifications?.warn("This combatant is already performing a complex action.");
+    ui.notifications?.warn(t("alreadyActing"));
     return false;
   }
   if (pendingDialogs.has(combatant)) return false;
@@ -117,31 +119,31 @@ export async function promptComplexAction() {
     // DialogV2 requires an attribute-free outer div.
     const content = document.createElement("div");
     content.innerHTML = `<div class="tick-combat-dialog"><div class="tick-combat-fields">
-      <label class="tick-combat-field"><span>Action</span>
+      <label class="tick-combat-field"><span>${t("action")}</span>
         <input name="name" type="text" required autofocus autocomplete="off">
       </label>
-      <label class="tick-combat-field"><span>Total duration (ticks)</span>
+      <label class="tick-combat-field"><span>${t("duration")}</span>
         <span class="tick-combat-duration">
-          <input class="tick-combat-duration-input" name="duration" aria-label="Total duration (ticks)" type="number" min="8" step="8" value="8" required>
-          <button type="button" class="tick-combat-duration-step" data-action="increaseComplexDuration" title="Increase duration by 8 ticks" aria-label="Increase duration by 8 ticks"><i class="fa-solid fa-caret-up" aria-hidden="true"></i></button>
-          <button type="button" class="tick-combat-duration-step" data-action="decreaseComplexDuration" title="Decrease duration by 8 ticks" aria-label="Decrease duration by 8 ticks"><i class="fa-solid fa-caret-down" aria-hidden="true"></i></button>
+          <input class="tick-combat-duration-input" name="duration" aria-label="${t("duration")}" type="number" min="8" step="8" value="8" required>
+          <button type="button" class="tick-combat-duration-step" data-action="increaseComplexDuration" title="${t("increaseDuration")}" aria-label="${t("increaseDuration")}"><i class="fa-solid fa-caret-up" aria-hidden="true"></i></button>
+          <button type="button" class="tick-combat-duration-step" data-action="decreaseComplexDuration" title="${t("decreaseDuration")}" aria-label="${t("decreaseDuration")}"><i class="fa-solid fa-caret-down" aria-hidden="true"></i></button>
         </span>
       </label>
     </div></div>`;
     const result = await foundry.applications.api.DialogV2.input({
-      window: { title: "Complex action" },
+      window: { title: t("complexAction") },
       content, modal: true, rejectClose: false,
       actions: {
         increaseComplexDuration: (_event, target) => stepDuration(target, 1),
         decreaseComplexDuration: (_event, target) => stepDuration(target, -1)
       },
-      ok: { label: "Begin action", icon: "fa-solid fa-hourglass-start" }
+      ok: { label: t("beginAction"), icon: "fa-solid fa-hourglass-start" }
     });
     if (!result) return false;
     const name = String(result.name ?? "").trim();
     const duration = Number(result.duration);
     if (!name || !isComplexActionDuration(duration)) {
-      ui.notifications?.warn("Enter an action and a duration of at least 8 ticks in steps of 8.");
+      ui.notifications?.warn(t("invalidAction"));
       return false;
     }
     if (getSelectedCombatant() !== combatant) return false;

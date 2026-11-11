@@ -1,3 +1,4 @@
+import { t } from "./i18n.js";
 import { getCombatantData, setCombatantData } from "./data.js";
 
 export function canRollInitiative(combatant) {
@@ -17,25 +18,25 @@ export async function rollInitiative(combatant) {
   content.innerHTML = `
     <div class="tick-combat-dialog">
     <div class="tick-combat-fields">
-      <label class="tick-combat-field"><span>Reaction</span>
+      <label class="tick-combat-field"><span>${t("reaction")}</span>
         <input class="tick-combat-initiative-input" name="reaction" type="number" min="0" step="1" value="0" required autofocus>
       </label>
-      <label class="tick-combat-field"><span>Impairment</span>
+      <label class="tick-combat-field"><span>${t("impairment")}</span>
         <input class="tick-combat-initiative-input" name="impairment" type="number" min="0" step="1" value="0" required>
       </label>
-      <p>Initial ticks = 30 − Reaction + Impairment − 1d6</p>
+      <p>${t("initiativeFormula")}</p>
     </div>
     </div>`;
   const result = await foundry.applications.api.DialogV2.input({
-    window: { title: `Initiative: ${combatant.name}` },
+    window: { title: t("initiativeTitle", { name: combatant.name ?? t("combatant") }) },
     content, modal: true, rejectClose: false,
-    ok: { label: "Roll initiative", icon: "fa-solid fa-dice-d6" }
+    ok: { label: t("rollInitiative"), icon: "fa-solid fa-dice-d6" }
   });
   if (!result) return;
   const reaction = Number(result.reaction);
   const impairment = Number(result.impairment);
   if (!validateInitiativeValues(reaction, impairment)) {
-    ui.notifications?.warn("Enter a whole number of 0 or greater for both values.");
+    ui.notifications?.warn(t("invalidInitiative"));
     return;
   }
   if (!canRollInitiative(combatant) || combat !== game.combat) return;
