@@ -164,8 +164,13 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", async () => {
-  setTimelineApp(new TimelineApp());
-  await refreshTimeline({ open: true });
+  try {
+    // Resume encounters whose initial tick normalization did not run.
+    await normalizeTicks();
+  } finally {
+    setTimelineApp(new TimelineApp());
+    await refreshTimeline({ open: true });
+  }
   console.info(`${MODULE_ID} | ${MODULE_TITLE} ready`);
 });
 

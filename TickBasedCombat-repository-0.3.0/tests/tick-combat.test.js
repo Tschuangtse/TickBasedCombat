@@ -4,6 +4,7 @@ import { getCombatantData, normalizeTicks, setTicks } from "../src/data.js";
 import { groupTimeline } from "../src/timelineView.js";
 import { canRollInitiative, rollInitiative, validateInitiativeValues } from "../src/initiative.js";
 import { refreshTokenHighlight } from "../src/tokenHighlights.js";
+import { setTimelineApp } from "../src/state.js";
 
 function encounter(ticks, { started = true, events = [], waiting = [] } = {}) {
   const writes = [];
@@ -66,6 +67,29 @@ test("German normalization uses the Combatant type and keeps update operations s
   await Promise.all([normalizeTicks(), normalizeTicks()]);
   assert.deepEqual(values(), [29, 0, 1, 11]);
   assert.equal(combat.flags.totalTicks, 5);
+});
+
+test("loading a started German encounter recovers its initial tick offset once", async () => {
+  const { combat, values } = encounter([4, 13, 20]);
+  const hooks = new Map();
+  globalThis.Hooks = { once: (name, fn) => hooks.set(name, fn), on() {} };
+  globalThis.foundry = { applications: { api: {
+    ApplicationV2: class { async render() {} setPosition() {} },
+    HandlebarsApplicationMixin: Base => Base
+  } } };
+  game.settings = { get: (_scope, key) => key === "language" ? "de" : 1 };
+  try {
+    await import("../src/main.js");
+    await hooks.get("ready")();
+    assert.deepEqual(values(), [0, 9, 16]);
+    assert.equal(combat.flags.totalTicks, 4);
+    await normalizeTicks();
+    assert.equal(combat.flags.totalTicks, 4);
+  } finally {
+    setTimelineApp(null);
+    delete globalThis.Hooks;
+    delete globalThis.foundry;
+  }
 });
 
 test("a tied group advances once, repeated concurrent requests do not double count", async () => {
